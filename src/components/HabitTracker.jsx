@@ -1,171 +1,186 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-function getISOWeek(date) {
-  const target = new Date(date.valueOf());
-  const dayNr = (date.getDay() + 6) % 7;
-  target.setDate(target.getDate() - dayNr + 3);
-  const firstThursday = new Date(target.getFullYear(), 0, 4);
-  const diff = target - firstThursday;
-  return 1 + Math.round(diff / (7 * 24 * 3600 * 1000));
+// Helpers for ISO week handling
+function isoWeek(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7; // 1-7, Monday=1
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return { year: d.getUTCFullYear(), week: weekNo };
 }
 
-function getWeekKey(date = new Date()) {
-  const year = date.getFullYear();
-  const week = getISOWeek(date);
-  return `${year}-W${week}`;
-}
+function weekKey(year, week) { return `habits:checks:${year}-W${String(week).padStart(2,'0')}`; }
+const HABITS_KEY = 'habits:list';
 
-const defaultHabits = [
-  'Hydrate',
-  'Walk 20m',
-  'Journal',
-  'Meditate',
-  'Sleep 7h',
-];
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+export default function HabitTracker() {
+  const { year: curYear, week: curWeek } = useMemo(() => isoWeek(new Date()), []);
+  const [year, setYear] = useState(curYear);
+  const [week, setWeek] = useState(curWeek);
+  const [habits, setHabits] = useState([]);
+  const [checks, setChecks] = useState({});
+  const [newHabit, setNewHabit] = useState('');
 
-const HabitTracker = () => {
-  const [habits, setHabits] = useState(() => {
-    const saved = localStorage.getItem('habits:list');
-    return saved ? JSON.parse(saved) : defaultHabits;
-  });
-  const weekKey = useMemo(() => getWeekKey(), []);
-  const [checks, setChecks] = useState(() => {
-    const saved = localStorage.getItem(`habits:checks:${weekKey}`);
-    return saved ? JSON.parse(saved) : Array.from({ length: habits.length }, () => Array(7).fill(false));
-  });
-
+  // Load habits list
   useEffect(() => {
-    localStorage.setItem('habits:list', JSON.stringify(habits));
+    try {
+      const raw = localStorage.getItem(HABITS_KEY);
+      if (raw) setHabits(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  // Save habits list
+  useEffect(() => {
+    try { localStorage.setItem(HABITS_KEY, JSON.stringify(habits)); } catch {}
   }, [habits]);
 
+  // Load checks for current week
   useEffect(() => {
-    localStorage.setItem(`habits:checks:${weekKey}`, JSON.stringify(checks));
-  }, [checks, weekKey]);
+    try {
+      const raw = localStorage.getItem(weekKey(year, week));
+      setChecks(raw ? JSON.parse(raw) : {});
+    } catch { setChecks({}); }
+  }, [year, week]);
 
+  // Save checks for current week
   useEffect(() => {
-    setChecks((prev) => {
-      const rows = habits.length;
-      const next = Array.from({ length: rows }, (_, r) => (prev[r] ? [...prev[r]] : Array(7).fill(false)));
-      return next.map((row) => row.slice(0, 7));
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [habits.length]);
+    try { localStorage.setItem(weekKey(year, week), JSON.stringify(checks)); } catch {}
+  }, [year, week, checks]);
 
-  const toggle = (r, c) => {
-    setChecks((prev) => {
-      const next = prev.map((row) => row.slice());
-      next[r][c] = !next[r][c];
-      return next;
+  const addHabit = () => {
+    const name = newHabit.trim();
+    if (!name) return;
+    if (habits.includes(name)) return;
+    setHabits([...habits, name]);
+    setNewHabit('');
+  };
+  const removeHabit = (name) => {
+    setHabits(habits.filter(h => h !== name));
+    // also remove any checks for this habit in current week
+    setChecks(prev => {
+      const nxt = { ...prev };
+      delete nxt[name];
+      return nxt;
     });
   };
 
-  const updateHabit = (i, value) => {
-    setHabits((prev) => {
-      const next = [...prev];
-      next[i] = value;
-      return next;
+  const toggle = (habit, dayIdx) => {
+    setChecks(prev => {
+      const habitDays = prev[habit] || Array(7).fill(false);
+      const updated = { ...prev, [habit]: habitDays.map((v,i)=> i===dayIdx ? !v : v) };
+      return updated;
     });
   };
 
-  const addHabit = () => setHabits((prev) => [...prev, 'New habit']);
-  const removeHabit = (i) => setHabits((prev) => prev.filter((_, idx) => idx !== i));
-
-  const resetWeek = () => {
-    const empty = Array.from({ length: habits.length }, () => Array(7).fill(false));
-    setChecks(empty);
+  const goWeek = (delta) => {
+    // Build a date from ISO year/week (Mon)
+    const simple = new Date(Date.UTC(year, 0, 4));
+    const dow = simple.getUTCDay() || 7;
+    const monday = new Date(simple);
+    monday.setUTCDate(simple.getUTCDate() - dow + 1 + (week-1)*7);
+    monday.setUTCDate(monday.getUTCDate() + delta*7);
+    const { year: y, week: w } = isoWeek(monday);
+    setYear(y); setWeek(w);
   };
 
   return (
-    <section
-      className="rounded-sm p-4 sm:p-5 bg-[#FFF9F7] border-2 border-[#2b2b2b]"
-      style={{ boxShadow: '6px 6px 0 #2b2b2b' }}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-mono text-base sm:text-lg text-[#1f1f1f]">Weekly Habits</h2>
-          <p className="font-mono text-[11px] text-[#2b2b2b]">Week {weekKey}</p>
+    <section className="mt-8">
+      <div className="bg-[#EED4DB] border-2 border-[#2b2b2b] shadow-[6px_6px_0_#2b2b2b] p-4 font-mono">
+        {/* Header & Controls */}
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="text-lg text-[#1f1f1f] font-bold">Weekly Habit Tracker</h2>
+            <p className="text-xs text-[#2b2b2b]">Data is saved on your device. Use the arrows to browse previous weeks.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => goWeek(-1)} className="px-3 py-1 bg-white border-2 border-[#2b2b2b] shadow-[3px_3px_0_#2b2b2b] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">◀</button>
+            <div className="px-3 py-1 bg-white border-2 border-[#2b2b2b] text-sm">{year}-W{String(week).padStart(2,'0')}</div>
+            <button onClick={() => goWeek(1)} className="px-3 py-1 bg-white border-2 border-[#2b2b2b] shadow-[3px_3px_0_#2b2b2b] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">▶</button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={addHabit}
-            className="font-mono px-3 py-2 bg-[#EED4DB] border-2 border-[#2b2b2b] hover:bg-[#D698AB] transition-colors"
-            style={{ boxShadow: '3px 3px 0 #2b2b2b' }}
-          >
-            + Add
-          </button>
-          <button
-            onClick={resetWeek}
-            className="font-mono px-3 py-2 bg-[#73986F] text-white border-2 border-[#2b2b2b] hover:bg-[#426E55] transition-colors"
-            style={{ boxShadow: '3px 3px 0 #2b2b2b' }}
-          >
-            Reset Week
-          </button>
-        </div>
-      </div>
 
-      <div className="overflow-x-auto mt-4">
-        <table className="min-w-full text-sm font-mono">
-          <thead>
-            <tr className="bg-[#EED4DB] border-2 border-[#2b2b2b]">
-              <th className="text-left p-2 border-r-2 border-[#2b2b2b] text-[#1f1f1f]">Habit</th>
-              {days.map((d) => (
-                <th key={d} className="p-2 text-[#1f1f1f] border-r-2 last:border-r-0 border-[#2b2b2b]">{d}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {habits.map((h, r) => (
-              <tr key={r} className="border-b-2 border-[#2b2b2b]">
-                <td className="p-2 border-r-2 border-[#2b2b2b]">
-                  <div className="flex items-center gap-2">
-                    <input
-                      value={h}
-                      onChange={(e) => updateHabit(r, e.target.value)}
-                      className="w-full font-mono bg-white border-2 border-[#2b2b2b] px-2 py-1 focus:outline-none focus:ring-0"
-                    />
-                    <button
-                      onClick={() => removeHabit(r)}
-                      className="font-mono px-2 py-1 bg-[#CB748E] text-white border-2 border-[#2b2b2b] hover:bg-[#D698AB]"
-                      style={{ boxShadow: '2px 2px 0 #2b2b2b' }}
-                    >
-                      X
-                    </button>
-                  </div>
-                </td>
-                {days.map((_, c) => {
-                  const checked = checks[r]?.[c] || false;
-                  return (
-                    <td key={c} className="p-1 sm:p-2 border-r-2 last:border-r-0 border-[#2b2b2b]">
-                      <button
-                        onClick={() => toggle(r, c)}
-                        className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center border-2 border-[#2b2b2b] ${checked ? 'bg-[#73986F] text-white' : 'bg-white hover:bg-[#EED4DB]'}`}
-                        style={{ boxShadow: '2px 2px 0 #2b2b2b' }}
-                      >
-                        <AnimatePresence initial={false}>
-                          <motion.span
-                            key={checked ? 'yes' : 'no'}
-                            initial={{ scale: 0.6, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.6, opacity: 0 }}
-                            transition={{ duration: 0.15 }}
-                          >
-                            {checked ? '✅' : '✖'}
-                          </motion.span>
-                        </AnimatePresence>
-                      </button>
-                    </td>
-                  );
-                })}
+        {/* Add Habit */}
+        <div className="mt-4 flex gap-2">
+          <input
+            className="flex-1 px-3 py-2 border-2 border-[#2b2b2b] bg-white text-[#1f1f1f] shadow-[3px_3px_0_#2b2b2b]"
+            placeholder="Add a habit (e.g., Stretch, Read)"
+            value={newHabit}
+            onChange={(e)=>setNewHabit(e.target.value)}
+            onKeyDown={(e)=>{ if(e.key==='Enter') addHabit(); }}
+          />
+          <button onClick={addHabit} className="px-4 py-2 bg-[#73986F] text-white border-2 border-[#2b2b2b] shadow-[3px_3px_0_#2b2b2b] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">Add</button>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-auto mt-4">
+          <table className="min-w-full border-collapse">
+            <thead>
+              <tr>
+                <th className="bg-[#D698AB] text-[#1f1f1f] border-2 border-[#2b2b2b] px-3 py-2 text-left">Habit</th>
+                {DAYS.map(d => (
+                  <th key={d} className="bg-[#D698AB] text-[#1f1f1f] border-2 border-[#2b2b2b] px-3 py-2">{d}</th>
+                ))}
+                <th className="bg-[#D698AB] text-[#1f1f1f] border-2 border-[#2b2b2b] px-3 py-2">Remove</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {habits.length === 0 && (
+                <tr>
+                  <td colSpan={DAYS.length+2} className="text-center border-2 border-[#2b2b2b] bg-white text-[#1f1f1f] px-3 py-8">Add your first habit above</td>
+                </tr>
+              )}
+              {habits.map(habit => (
+                <tr key={habit}>
+                  <td className="bg-white text-[#1f1f1f] border-2 border-[#2b2b2b] px-3 py-2 whitespace-nowrap">{habit}</td>
+                  {Array.from({length:7}).map((_, idx) => {
+                    const val = (checks[habit]||Array(7).fill(false))[idx];
+                    return (
+                      <td key={idx} className="bg-white border-2 border-[#2b2b2b] text-center">
+                        <button
+                          onClick={() => toggle(habit, idx)}
+                          className="w-full h-full min-w-[48px] min-h-[44px]"
+                        >
+                          <AnimatePresence initial={false}>
+                            {val ? (
+                              <motion.span
+                                key="yes"
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                exit={{ scale: 0 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                className="text-green-700"
+                              >
+                                ✅
+                              </motion.span>
+                            ) : (
+                              <motion.span
+                                key="no"
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                exit={{ scale: 0 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                className="text-rose-700"
+                              >
+                                ✖
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
+                        </button>
+                      </td>
+                    );
+                  })}
+                  <td className="bg-white border-2 border-[#2b2b2b] text-center">
+                    <button onClick={() => removeHabit(habit)} className="px-3 py-1 bg-[#CB748E] text-white border-2 border-[#2b2b2b] shadow-[3px_3px_0_#2b2b2b] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );
-};
-
-export default HabitTracker;
+}

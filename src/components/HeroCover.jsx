@@ -1,64 +1,40 @@
 import React from 'react';
 import Spline from '@splinetool/react-spline';
-import { motion } from 'framer-motion';
 
-const HeroCover = () => {
+export default function HeroCover() {
   return (
-    <section
-      className="relative w-full h-[420px] sm:h-[480px] lg:h-[560px] overflow-hidden rounded-lg border-2 border-[#2b2b2b]"
-      style={{ boxShadow: '6px 6px 0 #2b2b2b' }}
-    >
-      <Spline scene="https://prod.spline.design/Jd4wcqFfe70N-TXP/scene.splinecode" style={{ width: '100%', height: '100%' }} />
-      {/* Pixel gradient veil overlay */}
+    <section className="relative w-full h-[60vh] md:h-[70vh] lg:h-[80vh] overflow-hidden rounded-none">
+      {/* Spline scene */}
+      <div className="absolute inset-0">
+        <Spline scene="https://prod.spline.design/Jd4wcqFfe70N-TXP/scene.splinecode" style={{ width: '100%', height: '100%' }} />
+      </div>
+
+      {/* Veil gradient so Spline doesn't overpower UI. Ensure it doesn't block pointer. */}
       <div className="pointer-events-none absolute inset-0" style={{
-        backgroundImage:
-          'repeating-linear-gradient(180deg, rgba(238,212,219,0.6) 0 2px, rgba(238,212,219,0.6) 2px 4px, rgba(115,152,111,0.25) 4px 6px, rgba(115,152,111,0.25) 6px 8px)'
+        background: 'radial-gradient(1200px 600px at 60% 40%, rgba(238,212,219,0.55), rgba(31,31,31,0.65))'
       }} />
 
       {/* Window title bar */}
-      <div className="absolute top-0 left-0 right-0 h-10 bg-[#EED4DB] border-b-2 border-[#2b2b2b] flex items-center justify-between px-3">
-        <span className="font-mono text-sm text-[#2b2b2b]">Retro Self‑Care Console</span>
-        <div className="flex gap-1">
-          <span className="w-3.5 h-3.5 bg-[#CB748E] border-2 border-[#2b2b2b]" />
-          <span className="w-3.5 h-3.5 bg-[#D698AB] border-2 border-[#2b2b2b]" />
-          <span className="w-3.5 h-3.5 bg-[#73986F] border-2 border-[#2b2b2b]" />
+      <div className="absolute top-6 left-6 right-6 select-none">
+        <div className="bg-[#EED4DB]/90 text-[#1f1f1f] border-2 border-[#2b2b2b] shadow-[6px_6px_0_#2b2b2b] font-mono">
+          <div className="flex items-center justify-between px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-[#CB748E] border-2 border-[#2b2b2b]" />
+              <span className="w-3 h-3 bg-[#D698AB] border-2 border-[#2b2b2b]" />
+              <span className="w-3 h-3 bg-[#73986F] border-2 border-[#2b2b2b]" />
+            </div>
+            <div className="text-sm tracking-tight font-bold">Self-Care Station // v0.1</div>
+            <div className="text-xs">8-bit</div>
+          </div>
         </div>
       </div>
 
-      {/* Headline */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-        <motion.h1
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="font-mono text-2xl sm:text-3xl lg:text-4xl text-[#1f1f1f]"
-          style={{ textShadow: '0 0 0 #000' }}
-        >
-          Welcome to your Pixel Sanctuary
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut', delay: 0.1 }}
-          className="mt-2 font-mono text-xs sm:text-sm text-[#2b2b2b]"
-        >
-          Track habits, moods, and moments — retro style.
-        </motion.p>
+      {/* Bottom tagline */}
+      <div className="absolute bottom-6 left-6">
+        <div className="bg-[#EED4DB] text-[#1f1f1f] border-2 border-[#2b2b2b] shadow-[6px_6px_0_#2b2b2b] px-4 py-2 font-mono text-sm">
+          Daily calm in chunky pixels
+        </div>
       </div>
-
-      {/* Pixel accents */}
-      <motion.div
-        className="absolute left-4 top-12 w-3 h-3 bg-[#CB748E] border-2 border-[#2b2b2b]"
-        animate={{ y: [0, -6, 0] }}
-        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <motion.div
-        className="absolute right-6 bottom-12 w-3 h-3 bg-[#73986F] border-2 border-[#2b2b2b]"
-        animate={{ y: [0, -6, 0] }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-      />
     </section>
   );
-};
-
-export default HeroCover;
+}
