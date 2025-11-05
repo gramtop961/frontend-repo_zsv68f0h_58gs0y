@@ -1,28 +1,27 @@
-import { useState } from 'react'
+import React from 'react';
+import { motion } from 'framer-motion';
+import HeroCover from './components/HeroCover';
+import HabitTracker from './components/HabitTracker';
+import WidgetsGrid from './components/WidgetsGrid';
+import ProfilePanel from './components/ProfilePanel';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">
-          Vibe Coding Platform
-        </h1>
-        <p className="text-gray-600 mb-6">
-          Your AI-powered development environment
-        </p>
-        <div className="text-center">
-          <button
-            onClick={() => setCount(count + 1)}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
-          >
-            Count is {count}
-          </button>
-        </div>
-      </div>
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#EED4DB] via-white to-[#73986F]/30 text-slate-800 selection:bg-[#CB748E]/20">
+      <motion.main
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+        className="pb-12"
+      >
+        <HeroCover />
+        <div className="-mt-8 md:-mt-12" />
+        <HabitTracker />
+        <WidgetsGrid />
+        <ProfilePanel />
+      </motion.main>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
