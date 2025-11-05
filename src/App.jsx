@@ -5,23 +5,19 @@ import HabitTracker from './components/HabitTracker';
 import WidgetsGrid from './components/WidgetsGrid';
 import ProfilePanel from './components/ProfilePanel';
 
-function App() {
+const App = () => {
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-[#EED4DB] via-white to-[#73986F]/30 text-slate-800 selection:bg-[#CB748E]/20">
-      <motion.main
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="pb-12"
-      >
-        <HeroCover />
-        <div className="-mt-8 md:-mt-12" />
-        <HabitTracker />
-        <WidgetsGrid />
-        <ProfilePanel />
-      </motion.main>
+    <div className="min-h-screen bg-gradient-to-br from-[#EED4DB] via-white to-[#73986F]/20 text-[#2D4839]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }} className="space-y-6 sm:space-y-8">
+          <HeroCover />
+          <WidgetsGrid />
+          <HabitTracker />
+          <ProfilePanel />
+        </motion.div>
+      </div>
     </div>
   );
-}
+};
 
 export default App;

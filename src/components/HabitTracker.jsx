@@ -1,52 +1,42 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCcw } from 'lucide-react';
+
+function getISOWeek(date) {
+  const target = new Date(date.valueOf());
+  const dayNr = (date.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = new Date(target.getFullYear(), 0, 4);
+  const diff = target - firstThursday;
+  return 1 + Math.round(diff / (7 * 24 * 3600 * 1000));
+}
+
+function getWeekKey(date = new Date()) {
+  const year = date.getFullYear();
+  const week = getISOWeek(date);
+  return `${year}-W${week}`;
+}
 
 const defaultHabits = [
   'Hydrate',
-  'Stretch',
-  'Journaling',
-  'Fresh Air',
-  'Sleep by 11',
+  'Walk 20m',
+  'Journal',
+  'Meditate',
+  'Sleep 7h',
 ];
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-function getWeekKey(date = new Date()) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
-  return `${d.getUTCFullYear()}-W${weekNo}`;
-}
-
 const HabitTracker = () => {
-  const [habits, setHabits] = useState(defaultHabits);
-  const [checks, setChecks] = useState({});
+  const [habits, setHabits] = useState(() => {
+    const saved = localStorage.getItem('habits:list');
+    return saved ? JSON.parse(saved) : defaultHabits;
+  });
   const weekKey = useMemo(() => getWeekKey(), []);
+  const [checks, setChecks] = useState(() => {
+    const saved = localStorage.getItem(`habits:checks:${weekKey}`);
+    return saved ? JSON.parse(saved) : Array.from({ length: habits.length }, () => Array(7).fill(false));
+  });
 
-  // Modal state for editing habit name
-  const [editingHabitIdx, setEditingHabitIdx] = useState(null);
-  const [tempName, setTempName] = useState('');
-
-  // Load from localStorage
-  useEffect(() => {
-    try {
-      const savedHabits = JSON.parse(localStorage.getItem('habits:list'));
-      if (savedHabits && Array.isArray(savedHabits) && savedHabits.length) {
-        setHabits(savedHabits);
-      }
-    } catch {}
-    try {
-      const savedWeek = JSON.parse(localStorage.getItem(`habits:checks:${weekKey}`));
-      if (savedWeek && typeof savedWeek === 'object') {
-        setChecks(savedWeek);
-      }
-    } catch {}
-  }, [weekKey]);
-
-  // Persist
   useEffect(() => {
     localStorage.setItem('habits:list', JSON.stringify(habits));
   }, [habits]);
@@ -55,167 +45,104 @@ const HabitTracker = () => {
     localStorage.setItem(`habits:checks:${weekKey}`, JSON.stringify(checks));
   }, [checks, weekKey]);
 
-  const toggleCell = (r, c) => {
-    const key = `${r}-${c}`;
-    setChecks((prev) => ({ ...prev, [key]: !prev[key] }));
+  useEffect(() => {
+    // Adjust checks matrix if habits count changes
+    setChecks((prev) => {
+      const rows = habits.length;
+      const next = Array.from({ length: rows }, (_, r) => prev[r] ? [...prev[r]] : Array(7).fill(false));
+      return next.map((row) => row.slice(0, 7));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [habits.length]);
+
+  const toggle = (r, c) => {
+    setChecks((prev) => {
+      const next = prev.map((row) => row.slice());
+      next[r][c] = !next[r][c];
+      return next;
+    });
   };
+
+  const updateHabit = (i, value) => {
+    setHabits((prev) => {
+      const next = [...prev];
+      next[i] = value;
+      return next;
+    });
+  };
+
+  const addHabit = () => setHabits((prev) => [...prev, 'New habit']);
+  const removeHabit = (i) => setHabits((prev) => prev.filter((_, idx) => idx !== i));
 
   const resetWeek = () => {
-    setChecks({});
-  };
-
-  const openEdit = (idx) => {
-    setEditingHabitIdx(idx);
-    setTempName(habits[idx] || '');
-  };
-
-  const saveEdit = () => {
-    if (editingHabitIdx == null) return;
-    const next = [...habits];
-    next[editingHabitIdx] = tempName.trim() || next[editingHabitIdx];
-    setHabits(next);
-    setEditingHabitIdx(null);
-  };
-
-  const addHabitRow = () => {
-    setHabits((h) => [...h, 'New Habit']);
+    const empty = Array.from({ length: habits.length }, () => Array(7).fill(false));
+    setChecks(empty);
   };
 
   return (
-    <section className="relative mx-auto w-full max-w-6xl px-4 md:px-6">
-      <div className="rounded-2xl bg-white/70 backdrop-blur-md shadow-lg ring-1 ring-[#EED4DB] overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#EED4DB]/60 to-[#73986F]/40">
-          <div>
-            <h2 className="text-lg font-semibold text-[#2D4839]">Weekly Habit Tracker</h2>
-            <p className="text-sm text-[#426E55]/80">{weekKey}</p>
-          </div>
-          <button
-            onClick={resetWeek}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#73986F] px-4 py-2 text-white shadow hover:shadow-lg hover:scale-[1.03] transition-all duration-300"
-          >
-            <RefreshCcw size={16} /> Reset Week
-          </button>
+    <section className="bg-white/70 backdrop-blur-sm rounded-xl p-4 sm:p-6 shadow-md border border-[#EED4DB]">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg sm:text-xl font-semibold text-[#2D4839]">Weekly Habits</h2>
+          <p className="text-xs text-[#426E55]">Week {weekKey}</p>
         </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px]">
-            <thead>
-              <tr>
-                <th className="text-left p-4 text-[#2D4839] font-medium">Habit</th>
-                {days.map((d) => (
-                  <th key={d} className="p-3 text-sm text-[#2D4839]/80 font-medium">{d}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {habits.map((h, r) => (
-                <tr key={r} className="border-t border-[#EED4DB]">
-                  <td className="p-3">
-                    <button
-                      onClick={() => openEdit(r)}
-                      className="text-left w-full rounded-lg px-3 py-2 hover:bg-[#EED4DB]/50 transition-all duration-300 text-[#2D4839]"
-                    >
-                      {h}
-                    </button>
-                  </td>
-                  {days.map((_, c) => {
-                    const k = `${r}-${c}`;
-                    const active = !!checks[k];
-                    return (
-                      <td key={c} className="p-2">
-                        <motion.button
-                          onClick={() => toggleCell(r, c)}
-                          initial={false}
-                          animate={{ backgroundColor: active ? '#73986F' : 'rgba(226, 232, 240, 0.6)', scale: active ? 1.02 : 1 }}
-                          whileTap={{ scale: 0.92 }}
-                          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                          className={`w-9 h-9 rounded-lg grid place-items-center mx-auto shadow-sm ${active ? 'text-white' : 'text-[#426E55]'} `}
-                          aria-pressed={active}
-                        >
-                          <AnimatePresence mode="popLayout" initial={false}>
-                            {active ? (
-                              <motion.span
-                                key="on"
-                                initial={{ opacity: 0, scale: 0.6 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.6 }}
-                              >
-                                ✅
-                              </motion.span>
-                            ) : (
-                              <motion.span
-                                key="off"
-                                initial={{ opacity: 0, scale: 0.6 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.6 }}
-                              >
-                                ❌
-                              </motion.span>
-                            )}
-                          </AnimatePresence>
-                        </motion.button>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="p-4">
-          <button
-            onClick={addHabitRow}
-            className="text-sm rounded-lg px-3 py-2 bg-[#EED4DB] text-[#2D4839] hover:shadow hover:scale-[1.03] transition-all"
-          >
-            + Add Habit
-          </button>
+        <div className="flex gap-2">
+          <button onClick={addHabit} className="px-3 py-2 rounded-lg bg-[#EED4DB] text-[#2D4839] hover:bg-[#D698AB] transition-all duration-300 shadow-sm">Add</button>
+          <button onClick={resetWeek} className="px-3 py-2 rounded-lg bg-[#73986F] text-white hover:bg-[#426E55] transition-all duration-300 shadow-sm">Reset Week</button>
         </div>
       </div>
 
-      {/* Edit Modal */}
-      <AnimatePresence>
-        {editingHabitIdx != null && (
-          <motion.div
-            className="fixed inset-0 z-50 grid place-items-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setEditingHabitIdx(null)} />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-              className="relative z-10 w-full max-w-md rounded-2xl bg-[#FFF8F9] shadow-xl p-6 border border-[#EED4DB]"
-            >
-              <h3 className="text-[#2D4839] font-semibold mb-3">Edit Habit</h3>
-              <input
-                value={tempName}
-                onChange={(e) => setTempName(e.target.value)}
-                className="w-full rounded-xl border border-[#EED4DB] bg-white/70 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#CB748E]"
-                placeholder="Habit name"
-              />
-              <div className="mt-4 flex gap-3 justify-end">
-                <button
-                  onClick={() => setEditingHabitIdx(null)}
-                  className="px-4 py-2 rounded-xl bg-[#EED4DB] text-[#2D4839] hover:shadow transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={saveEdit}
-                  className="px-4 py-2 rounded-xl bg-[#73986F] text-white shadow hover:shadow-lg hover:scale-[1.03] transition-all"
-                >
-                  Save
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className="overflow-x-auto mt-4">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr>
+              <th className="text-left p-2 text-[#426E55]">Habit</th>
+              {days.map((d) => (
+                <th key={d} className="p-2 text-[#426E55] font-medium">{d}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {habits.map((h, r) => (
+              <tr key={r} className="border-t border-[#EED4DB]">
+                <td className="p-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={h}
+                      onChange={(e) => updateHabit(r, e.target.value)}
+                      className="w-full bg-white/60 border border-[#EED4DB] rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#CB748E]/40"
+                    />
+                    <button onClick={() => removeHabit(r)} className="text-[#CB748E] hover:text-[#D698AB]">✕</button>
+                  </div>
+                </td>
+                {days.map((_, c) => {
+                  const checked = checks[r]?.[c] || false;
+                  return (
+                    <td key={c} className="p-1 sm:p-2">
+                      <button
+                        onClick={() => toggle(r, c)}
+                        className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-md border transition-all duration-300 ${checked ? 'bg-[#73986F] text-white border-[#426E55] shadow' : 'bg-white text-[#2D4839] border-[#EED4DB] hover:bg-[#EED4DB]/50'}`}
+                      >
+                        <AnimatePresence initial={false}>
+                          <motion.span
+                            key={checked ? 'yes' : 'no'}
+                            initial={{ scale: 0.6, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.6, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            {checked ? '✅' : '❌'}
+                          </motion.span>
+                        </AnimatePresence>
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 };
