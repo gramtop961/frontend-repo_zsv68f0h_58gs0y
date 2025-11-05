@@ -7,7 +7,17 @@ import ProfilePanel from './components/ProfilePanel';
 
 const App = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#EED4DB] via-white to-[#73986F]/20 text-[#2D4839]">
+    <div
+      className="min-h-screen text-[#1f1f1f]"
+      style={{
+        backgroundImage: `
+          linear-gradient(0deg, rgba(0,0,0,0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px),
+          radial-gradient(circle at 0 0, #EED4DB 0, #EED4DB 40%, #ffffff 100%)
+        `,
+        backgroundSize: '24px 24px, 24px 24px, 100% 100%',
+      }}
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }} className="space-y-6 sm:space-y-8">
           <HeroCover />

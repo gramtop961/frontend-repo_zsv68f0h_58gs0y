@@ -3,10 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const Card = ({ children, onClick }) => (
   <motion.button
-    whileHover={{ scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
+    whileHover={{ y: -2 }}
+    whileTap={{ y: 0 }}
     onClick={onClick}
-    className="text-left bg-white/70 backdrop-blur-sm rounded-xl p-4 shadow-md border border-[#EED4DB] w-full"
+    className="text-left bg-[#FFF9F7] p-4 border-2 border-[#2b2b2b] w-full font-mono"
+    style={{ boxShadow: '5px 5px 0 #2b2b2b' }}
   >
     {children}
   </motion.button>
@@ -21,17 +22,21 @@ const Modal = ({ open, onClose, title, children }) => (
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
-        <div onClick={onClose} className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+        <div onClick={onClose} className="absolute inset-0" style={{
+          backgroundImage:
+            'repeating-linear-gradient(45deg, rgba(0,0,0,0.08) 0 6px, transparent 6px 12px)'
+        }} />
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-          className="relative z-10 max-w-lg w-[92%] bg-[#FFF9F7] rounded-2xl p-6 shadow-xl border border-[#EED4DB]"
+          transition={{ type: 'spring', stiffness: 380, damping: 18 }}
+          className="relative z-10 max-w-lg w-[92%] bg-[#FFF9F7] p-5 border-2 border-[#2b2b2b] font-mono"
+          style={{ boxShadow: '8px 8px 0 #2b2b2b' }}
         >
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-[#2D4839]">{title}</h3>
-            <button onClick={onClose} className="text-[#CB748E] hover:text-[#D698AB]">Close</button>
+          <div className="flex items-center justify-between mb-3 border-b-2 border-[#2b2b2b] pb-2">
+            <h3 className="text-base text-[#1f1f1f]">{title}</h3>
+            <button onClick={onClose} className="px-2 py-1 bg-[#CB748E] text-white border-2 border-[#2b2b2b] hover:bg-[#D698AB]" style={{ boxShadow: '2px 2px 0 #2b2b2b' }}>Close</button>
           </div>
           {children}
         </motion.div>
@@ -67,18 +72,18 @@ const DailyQuote = () => {
   return (
     <>
       <Card onClick={() => setOpen(true)}>
-        <p className="text-xs text-[#426E55] mb-1">Daily Quote</p>
-        <p className="text-[#2D4839] line-clamp-2">{data ? `“${data.content}”` : 'Loading…'}</p>
-        <p className="text-xs text-[#426E55] mt-1">{data?.author || ''}</p>
+        <p className="text-[11px] text-[#2b2b2b] mb-1">Daily Quote</p>
+        <p className="text-[#1f1f1f] line-clamp-2">{data ? `“${data.content}”` : 'Loading…'}</p>
+        <p className="text-[11px] text-[#2b2b2b] mt-1">{data?.author || ''}</p>
       </Card>
       <Modal open={open} onClose={() => setOpen(false)} title="Daily Quote">
         {data ? (
           <div>
-            <p className="text-[#2D4839] text-lg">“{data.content}”</p>
-            <p className="text-sm text-[#426E55] mt-2">— {data.author}</p>
+            <p className="text-[#1f1f1f] text-base">“{data.content}”</p>
+            <p className="text-[12px] text-[#2b2b2b] mt-2">— {data.author}</p>
           </div>
         ) : (
-          <p className="text-[#426E55]">Loading…</p>
+          <p className="text-[#2b2b2b]">Loading…</p>
         )}
       </Modal>
     </>
@@ -111,25 +116,25 @@ const WeatherPeek = () => {
   return (
     <>
       <Card onClick={() => setOpen(true)}>
-        <p className="text-xs text-[#426E55] mb-1">Weather</p>
+        <p className="text-[11px] text-[#2b2b2b] mb-1">Weather</p>
         {weather ? (
-          <div className="text-[#2D4839]">
-            <span className="text-xl font-semibold">{Math.round(weather.temperature)}°C</span>
+          <div className="text-[#1f1f1f]">
+            <span className="text-xl font-bold">{Math.round(weather.temperature)}°C</span>
             <span className="ml-2 text-sm">Wind {Math.round(weather.windspeed)} km/h</span>
           </div>
         ) : (
-          <p className="text-[#426E55]">{status || 'Loading…'}</p>
+          <p className="text-[#2b2b2b]">{status || 'Loading…'}</p>
         )}
       </Card>
       <Modal open={open} onClose={() => setOpen(false)} title="Weather details">
         {weather ? (
-          <div className="text-[#2D4839] space-y-2">
+          <div className="text-[#1f1f1f] space-y-2">
             <p>Temperature: {weather.temperature} °C</p>
             <p>Wind: {weather.windspeed} km/h</p>
             <p>Direction: {weather.winddirection}°</p>
           </div>
         ) : (
-          <p className="text-[#426E55]">{status || 'Loading…'}</p>
+          <p className="text-[#2b2b2b]">{status || 'Loading…'}</p>
         )}
       </Modal>
     </>
@@ -153,10 +158,10 @@ const MoodTracker = () => {
   return (
     <>
       <Card onClick={() => setOpen(true)}>
-        <p className="text-xs text-[#426E55] mb-1">Mood</p>
+        <p className="text-[11px] text-[#2b2b2b] mb-1">Mood</p>
         <div className="flex items-center gap-3">
           <span className="text-2xl">{moodEmojis[value - 1]}</span>
-          <span className="text-[#2D4839]">{value}/5</span>
+          <span className="text-[#1f1f1f]">{value}/5</span>
         </div>
       </Card>
       <Modal open={open} onClose={() => setOpen(false)} title="How are you feeling?">
@@ -166,7 +171,8 @@ const MoodTracker = () => {
               <button
                 key={i}
                 onClick={() => setValue(i + 1)}
-                className={`p-2 rounded-lg transition ${value === i + 1 ? 'bg-[#EED4DB]' : 'hover:bg-[#EED4DB]/50'}`}
+                className={`px-2 py-1 border-2 border-[#2b2b2b] ${value === i + 1 ? 'bg-[#EED4DB]' : 'bg-white hover:bg-[#EED4DB]'}`}
+                style={{ boxShadow: '2px 2px 0 #2b2b2b' }}
               >
                 {m}
               </button>
@@ -213,11 +219,11 @@ const KindNote = () => {
   return (
     <>
       <Card onClick={() => setOpen(true)}>
-        <p className="text-xs text-[#426E55] mb-1">Kind Note</p>
-        <p className="text-[#2D4839] line-clamp-2">{note || 'Loading…'}</p>
+        <p className="text-[11px] text-[#2b2b2b] mb-1">Kind Note</p>
+        <p className="text-[#1f1f1f] line-clamp-2">{note || 'Loading…'}</p>
       </Card>
       <Modal open={open} onClose={() => setOpen(false)} title="A kind note">
-        <p className="text-[#2D4839] text-lg">{note}</p>
+        <p className="text-[#1f1f1f] text-base">{note}</p>
       </Modal>
     </>
   );

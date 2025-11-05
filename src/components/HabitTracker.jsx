@@ -46,10 +46,9 @@ const HabitTracker = () => {
   }, [checks, weekKey]);
 
   useEffect(() => {
-    // Adjust checks matrix if habits count changes
     setChecks((prev) => {
       const rows = habits.length;
-      const next = Array.from({ length: rows }, (_, r) => prev[r] ? [...prev[r]] : Array(7).fill(false));
+      const next = Array.from({ length: rows }, (_, r) => (prev[r] ? [...prev[r]] : Array(7).fill(false)));
       return next.map((row) => row.slice(0, 7));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -80,48 +79,70 @@ const HabitTracker = () => {
   };
 
   return (
-    <section className="bg-white/70 backdrop-blur-sm rounded-xl p-4 sm:p-6 shadow-md border border-[#EED4DB]">
+    <section
+      className="rounded-sm p-4 sm:p-5 bg-[#FFF9F7] border-2 border-[#2b2b2b]"
+      style={{ boxShadow: '6px 6px 0 #2b2b2b' }}
+    >
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg sm:text-xl font-semibold text-[#2D4839]">Weekly Habits</h2>
-          <p className="text-xs text-[#426E55]">Week {weekKey}</p>
+          <h2 className="font-mono text-base sm:text-lg text-[#1f1f1f]">Weekly Habits</h2>
+          <p className="font-mono text-[11px] text-[#2b2b2b]">Week {weekKey}</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={addHabit} className="px-3 py-2 rounded-lg bg-[#EED4DB] text-[#2D4839] hover:bg-[#D698AB] transition-all duration-300 shadow-sm">Add</button>
-          <button onClick={resetWeek} className="px-3 py-2 rounded-lg bg-[#73986F] text-white hover:bg-[#426E55] transition-all duration-300 shadow-sm">Reset Week</button>
+          <button
+            onClick={addHabit}
+            className="font-mono px-3 py-2 bg-[#EED4DB] border-2 border-[#2b2b2b] hover:bg-[#D698AB] transition-colors"
+            style={{ boxShadow: '3px 3px 0 #2b2b2b' }}
+          >
+            + Add
+          </button>
+          <button
+            onClick={resetWeek}
+            className="font-mono px-3 py-2 bg-[#73986F] text-white border-2 border-[#2b2b2b] hover:bg-[#426E55] transition-colors"
+            style={{ boxShadow: '3px 3px 0 #2b2b2b' }}
+          >
+            Reset Week
+          </button>
         </div>
       </div>
 
       <div className="overflow-x-auto mt-4">
-        <table className="min-w-full text-sm">
+        <table className="min-w-full text-sm font-mono">
           <thead>
-            <tr>
-              <th className="text-left p-2 text-[#426E55]">Habit</th>
+            <tr className="bg-[#EED4DB] border-2 border-[#2b2b2b]">
+              <th className="text-left p-2 border-r-2 border-[#2b2b2b] text-[#1f1f1f]">Habit</th>
               {days.map((d) => (
-                <th key={d} className="p-2 text-[#426E55] font-medium">{d}</th>
+                <th key={d} className="p-2 text-[#1f1f1f] border-r-2 last:border-r-0 border-[#2b2b2b]">{d}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {habits.map((h, r) => (
-              <tr key={r} className="border-t border-[#EED4DB]">
-                <td className="p-2">
+              <tr key={r} className="border-b-2 border-[#2b2b2b]">
+                <td className="p-2 border-r-2 border-[#2b2b2b]">
                   <div className="flex items-center gap-2">
                     <input
                       value={h}
                       onChange={(e) => updateHabit(r, e.target.value)}
-                      className="w-full bg-white/60 border border-[#EED4DB] rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#CB748E]/40"
+                      className="w-full font-mono bg-white border-2 border-[#2b2b2b] px-2 py-1 focus:outline-none focus:ring-0"
                     />
-                    <button onClick={() => removeHabit(r)} className="text-[#CB748E] hover:text-[#D698AB]">✕</button>
+                    <button
+                      onClick={() => removeHabit(r)}
+                      className="font-mono px-2 py-1 bg-[#CB748E] text-white border-2 border-[#2b2b2b] hover:bg-[#D698AB]"
+                      style={{ boxShadow: '2px 2px 0 #2b2b2b' }}
+                    >
+                      X
+                    </button>
                   </div>
                 </td>
                 {days.map((_, c) => {
                   const checked = checks[r]?.[c] || false;
                   return (
-                    <td key={c} className="p-1 sm:p-2">
+                    <td key={c} className="p-1 sm:p-2 border-r-2 last:border-r-0 border-[#2b2b2b]">
                       <button
                         onClick={() => toggle(r, c)}
-                        className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-md border transition-all duration-300 ${checked ? 'bg-[#73986F] text-white border-[#426E55] shadow' : 'bg-white text-[#2D4839] border-[#EED4DB] hover:bg-[#EED4DB]/50'}`}
+                        className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center border-2 border-[#2b2b2b] ${checked ? 'bg-[#73986F] text-white' : 'bg-white hover:bg-[#EED4DB]'}`}
+                        style={{ boxShadow: '2px 2px 0 #2b2b2b' }}
                       >
                         <AnimatePresence initial={false}>
                           <motion.span
@@ -129,9 +150,9 @@ const HabitTracker = () => {
                             initial={{ scale: 0.6, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.6, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
+                            transition={{ duration: 0.15 }}
                           >
-                            {checked ? '✅' : '❌'}
+                            {checked ? '✅' : '✖'}
                           </motion.span>
                         </AnimatePresence>
                       </button>
